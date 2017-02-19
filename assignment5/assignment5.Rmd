@@ -1,0 +1,128 @@
+---
+title: "Assignment 5"
+author: "Kaspar Sakmann"
+date: "20. Dezember 2015"
+output: html_document
+---
+
+```{r}
+#setwd("~/coursera/datasci_course_materials/assignment5/")
+library('caret')
+dat<-read.csv("seaflow_21min.csv")
+```
+
+Q2: how many labeled synecho
+```{r}
+summary(dat$pop)
+```
+
+Q3: 3rd quantile of fsc_small
+```{r}
+summary(dat$fsc_small)
+```
+
+Q4:
+```{r}
+set.seed(107)
+inTrain<-createDataPartition(y=dat$pop,p=0.5, list=FALSE)
+str(inTrain)
+training<-dat[inTrain,]
+testing<-dat[-inTrain,]
+nrow(training)
+nrow(testing)
+mean(testing$time)
+```
+
+
+Q5: What other two categories are the data points labeled 'ultra' somehow mixed with? 
+```{r, echo=FALSE}
+library(ggplot2)
+ggplot(dat,aes(dat$chl_small,dat$pe,color=dat$pop))+geom_point()
+```
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+Q6: which populations cannot be recognized?
+```{r}
+library(rpart)
+fol<-formula(pop ~ fsc_small + fsc_perp + fsc_big + pe + chl_big + chl_small)
+tree_model<-rpart(formula=fol,method="class", data=training)
+print(tree_model)
+```
+crypto does not appear on any leaf.
+
+Q7: What is the value for the threshold of the pe field? 5006.5
+Q8: Which variables appear to be most important in predicting the class population? pe and chl_small.
+
+
+Q9: How much of the testing data gets correctly classified?
+```{r}
+tree_predictions<-predict(tree_model, testing, type='class')
+n_correct<-sum(tree_predictions==testing$pop)
+n_total<-nrow(testing)
+correct_fraction<-n_correct/n_total
+correct_fraction
+```
+
+Q10: same thing with a random forest
+```{r}
+library(randomForest)
+forest_model<-randomForest(formula=fol,method="class", data=training)
+forest_predictions<-predict(forest_model, testing, type='class')
+n_correct<-sum(forest_predictions==testing$pop)
+n_total<-nrow(testing)
+correct_fraction<-n_correct/n_total
+correct_fraction
+```
+
+Q11: which variables are most important? largest Gini decrease?
+```{r}
+importance(forest_model)
+```
+1. pe, 2. chl_small, 3. chl_big
+
+Q12: same thing with a support vector machine. 
+```{r}
+library(e1071)
+svm_model<-svm(formula=fol,method="class", data=training)
+svm_predictions<-predict(svm_model, testing, type='class')
+n_correct<-sum(svm_predictions==testing$pop)
+n_total<-nrow(testing)
+correct_fraction<-n_correct/n_total
+correct_fraction
+```
+
+Q13: confusion matrices of the three models
+```{r}
+table(pred=tree_predictions, true=testing$pop)
+table(pred=forest_predictions, true=testing$pop)
+table(pred=svm_predictions, true=testing$pop)
+```
+The worst error is on mistaking pico for ultra.
+
+Q14: what is the net change in accuracy if the file with file_id 208 is left out on the svm model. 
+```{r}
+purgeddat=dat[dat$file_id != 208,]
+set.seed(107)
+inTrain<-createDataPartition(y=purgeddat$pop,p=0.5, list=FALSE)
+str(inTrain)
+purgedtraining<-purgeddat[inTrain,]
+purgedtesting<-purgeddat[-inTrain,]
+
+purgedsvm_model<-svm(formula=fol,method="class", data=purgedtraining)
+purgedsvm_predictions<-predict(purgedsvm_model, purgedtesting, type='class')
+purgedn_correct<-sum(purgedsvm_predictions==purgedtesting$pop)
+purgedn_total<-nrow(purgedtesting)
+purgedcorrect_fraction<-n_correct/n_total
+purgedcorrect_fraction
+
+improvement<-purgedcorrect_fraction-correct_fraction
+improvement
+```
+
+Q15: which variable takes only a few discrete values?
+```{r}
+plot(dat$fsc_big)
+```
+
+
+
