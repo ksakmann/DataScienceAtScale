@@ -1,5 +1,6 @@
-datasci_course_materials
+datascience course materials
 ========================
 
-Public repository for course materials for the Data Science at Scale specialization offered by Coursera and the University of Washington.
+Repository for course materials for the Data Science at Scale specialization offered by Coursera and the University of Washington. Course taken in 2015.
+
 
